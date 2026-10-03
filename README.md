@@ -25,15 +25,13 @@ These templates do not create database services or enforce startup health depend
 
 ## Publication and support
 
-Local XML checks passed; this bridge configuration still requires live testing on Unraid.
-
 Repository: https://github.com/harikiran-lab/unraid-templates
 
 Template issues: https://github.com/harikiran-lab/unraid-templates/issues
 
 Application documentation and issues: https://github.com/maathimself/mailflow
 
-Submit and validate through https://ca.unraid.net/submit. Never upload local secrets or personalized exported templates.
+Submit and validate through https://ca.unraid.net/submit.
 
 ## License
 
