@@ -3,39 +3,39 @@
   <Name>MailFlow-backend</Name>
   <Repository>ghcr.io/maathimself/mailflow-backend:latest</Repository>
   <Registry>https://github.com/maathimself/mailflow/pkgs/container/mailflow-backend</Registry>
-  <Network>mailflow-network</Network>
+  <Network>bridge</Network>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/harikiran-lab/unraid-templates/issues</Support>
   <Project>https://github.com/maathimself/mailflow</Project>
   <ReadMe>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/README.md</ReadMe>
-  <Overview>API service for MailFlow, a self-hosted webmail client for existing IMAP/SMTP accounts. Install with MailFlow-frontend. PostgreSQL and Redis are separate prerequisites. The frontend connects internally to backend:3000; no backend host port is published. Configure your own application URL and secrets before starting.</Overview>
+  <Overview>API service for MailFlow, a self-hosted webmail client for existing IMAP/SMTP accounts. Install with MailFlow-frontend. PostgreSQL and Redis are separate prerequisites. Container API port 3000 is mapped to a host port you choose. Configure your own application URL and secrets before starting.</Overview>
   <Category>Productivity:</Category>
   <WebUI>
   </WebUI>
   <TemplateURL>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/templates/mailflow-backend.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/icons/mailflow.png</Icon>
   <ExtraParams>--restart unless-stopped</ExtraParams>
-  <Requires>Create the user-defined Docker network mailflow-network before installation. Both MailFlow containers must join it. Requires reachable PostgreSQL 16+ and Redis 7+ services, a dedicated database/user, and MailFlow-frontend. Preserve the backend network alias and internal port 3000. Start database and Redis before this container.</Requires>
+  <Requires>Requires reachable PostgreSQL 16+ and Redis 7+ services, a dedicated database/user, and MailFlow-frontend. Start database and Redis before this container. Configure the frontend with the Unraid host address and the mapped backend host port.</Requires>
   <Config Name="Session secret" Target="SESSION_SECRET" Default="" Mode="" Description="Generate a unique secret with openssl rand -hex 32. Do not reuse an example secret." Type="Variable" Display="always" Required="true" Mask="true">
   </Config>
   <Config Name="Application URL" Target="APP_URL" Default="" Mode="" Description="Full browser-facing URL, including HTTPS and any nonstandard port. Example: https://mail.example.com. Must match Frontend origin." Type="Variable" Display="always" Required="true" Mask="false">
   </Config>
   <Config Name="Frontend origin" Target="FRONTEND_URL" Default="" Mode="" Description="Set to the same browser-facing origin as APP_URL, including scheme and port, without a trailing slash." Type="Variable" Display="always" Required="true" Mask="false">
   </Config>
-  <Config Name="PostgreSQL host" Target="DB_HOST" Default="" Mode="" Description="Database container name on this network, or a reachable database hostname/IP. Not localhost." Type="Variable" Display="always" Required="true" Mask="false">
+  <Config Name="PostgreSQL host" Target="DB_HOST" Default="" Mode="" Description="Reachable database hostname or IPv4 address. For a database published on Unraid, use the Unraid host address, not localhost or a container name." Type="Variable" Display="always" Required="true" Mask="false">
   </Config>
-  <Config Name="PostgreSQL port" Target="DB_PORT" Default="5432" Mode="" Description="Use the database container port for same-network connections; use its published port for a remote host." Type="Variable" Display="always" Required="true" Mask="false">5432</Config>
+  <Config Name="PostgreSQL port" Target="DB_PORT" Default="5432" Mode="" Description="Database port reachable at DB_HOST. For a database container published on Unraid, use its mapped host port." Type="Variable" Display="always" Required="true" Mask="false">5432</Config>
   <Config Name="Database name" Target="DB_NAME" Default="mailflow" Mode="" Description="Create this dedicated database before starting MailFlow." Type="Variable" Display="always" Required="true" Mask="false">mailflow</Config>
   <Config Name="Database user" Target="DB_USER" Default="mailflow" Mode="" Description="Existing database role owning the MailFlow database and allowed to create/migrate its tables." Type="Variable" Display="always" Required="true" Mask="false">mailflow</Config>
   <Config Name="Database password" Target="DB_PASSWORD" Default="" Mode="" Description="Password for the configured PostgreSQL role. No password is supplied by this template." Type="Variable" Display="always" Required="true" Mask="true">
   </Config>
-  <Config Name="Redis connection URL" Target="REDIS_URL" Default="" Mode="" Description="Enter your Redis URL, for example redis://redis:6379/0 on the shared network. Include URL-encoded credentials if authentication is enabled." Type="Variable" Display="always" Required="true" Mask="true">
+  <Config Name="Redis connection URL" Target="REDIS_URL" Default="" Mode="" Description="Redis connection URL using a reachable server address and port. For Redis on Unraid, use the host address and mapped Redis port. Include URL-encoded credentials if authentication is enabled." Type="Variable" Display="always" Required="true" Mask="true">
   </Config>
   <Config Name="Credential encryption key" Target="ENCRYPTION_KEY" Default="" Mode="" Description="Generate with openssl rand -hex 32 (64 hexadecimal characters). Back up securely; changing or losing it makes stored credentials unreadable." Type="Variable" Display="always" Required="true" Mask="true">
   </Config>
   <Config Name="Node environment" Target="NODE_ENV" Default="production" Mode="" Description="Production runtime setting." Type="Variable" Display="advanced" Required="true" Mask="false">production</Config>
-  <Config Name="Internal API port" Target="PORT" Default="3000" Mode="" Description="Keep at 3000: the upstream frontend proxies to backend:3000. This does not publish a host port." Type="Variable" Display="advanced" Required="true" Mask="false">3000</Config>
+  <Config Name="Internal API port" Target="PORT" Default="3000" Mode="" Description="Keep at 3000 to match the container port mapping. Choose the external port in Backend API host port." Type="Variable" Display="advanced" Required="true" Mask="false">3000</Config>
   <Config Name="Google OAuth client ID" Target="GOOGLE_CLIENT_ID" Default="" Mode="" Description="Optional Google OAuth application client ID. Configure all Google OAuth fields together." Type="Variable" Display="advanced" Required="false" Mask="false">
   </Config>
   <Config Name="Google OAuth client secret" Target="GOOGLE_CLIENT_SECRET" Default="" Mode="" Description="Optional Google OAuth application secret." Type="Variable" Display="advanced" Required="false" Mask="true">
@@ -50,4 +50,5 @@
   </Config>
   <Config Name="Trusted proxy hops" Target="TRUST_PROXY_HOPS" Default="" Mode="" Description="Leave blank for default behavior. Use 2 only when all frontend access is restricted to your additional trusted reverse proxy; consult upstream guidance." Type="Variable" Display="advanced" Required="false" Mask="false">
   </Config>
+  <Config Name="Backend API host port" Mask="false" Type="Port" Description="Required host port mapped to container API port 3000. Choose an unused port and set frontend BACKEND_PORT to the same number." Display="always" Mode="tcp" Required="true" Target="3000" Default="3220">3220</Config>
 </Container>
