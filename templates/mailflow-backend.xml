@@ -15,7 +15,7 @@
   </WebUI>
   <TemplateURL>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/templates/mailflow-backend.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/icons/mailflow.png</Icon>
-  <ExtraParams>--restart unless-stopped --network-alias backend</ExtraParams>
+  <ExtraParams>--restart unless-stopped</ExtraParams>
   <Requires>Create the user-defined Docker network mailflow-network before installation. Both MailFlow containers must join it. Requires reachable PostgreSQL 16+ and Redis 7+ services, a dedicated database/user, and MailFlow-frontend. Preserve the backend network alias and internal port 3000. Start database and Redis before this container.</Requires>
   <Config Name="Session secret" Target="SESSION_SECRET" Default="" Mode="" Description="Generate a unique secret with openssl rand -hex 32. Do not reuse an example secret." Type="Variable" Display="always" Required="true" Mask="true">
   </Config>
