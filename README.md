@@ -25,7 +25,7 @@ These templates do not create database services or enforce startup health depend
 
 ## Publication and support
 
-Local XML checks passed; this bridge configuration still requires live testing on Unraid. Upload the templates and this README to replace their existing repository files. Existing installed containers may retain old settings: edit them explicitly to select bridge, remove the backend network alias, add the host-port mapping, and set frontend backend address/port.
+Local XML checks passed; this bridge configuration still requires live testing on Unraid.
 
 Repository: https://github.com/harikiran-lab/unraid-templates
 
