@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>MailFlow-frontend</Name>
+  <Repository>ghcr.io/maathimself/mailflow-frontend:latest</Repository>
+  <Registry>https://github.com/maathimself/mailflow/pkgs/container/mailflow-frontend</Registry>
+  <Network>mailflow-network</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/harikiran-lab/unraid-templates/issues</Support>
+  <Project>https://github.com/maathimself/mailflow</Project>
+  <ReadMe>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/README.md</ReadMe>
+  <Overview>Browser interface for MailFlow, a self-hosted webmail client for existing IMAP/SMTP accounts. Serves the React application through nginx and proxies API/WebSocket requests to backend:3000. Install MailFlow-backend first on the same network. HTTPS uses a generated self-signed certificate unless you provide cert.pem and key.pem. HTTP is intended for a trusted TLS-terminating reverse proxy.</Overview>
+  <Category>Productivity:</Category>
+  <WebUI>https://[IP]:[PORT:443]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/templates/mailflow-frontend.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/icons/mailflow.png</Icon>
+  <ExtraParams>--restart unless-stopped</ExtraParams>
+  <Requires>Create the user-defined Docker network mailflow-network before installation. Requires MailFlow-backend on that network with alias backend and internal port 3000, plus its configured PostgreSQL and Redis services. Set APP_URL and FRONTEND_URL in the backend to the URL users actually visit. Certificate storage must be writable.</Requires>
+  <Config Name="HTTPS web interface" Target="443" Default="50443" Mode="tcp" Description="Host HTTPS port. Change if occupied; the WebUI link follows this mapping." Type="Port" Display="always" Required="true" Mask="false">50443</Config>
+  <Config Name="HTTP reverse-proxy port" Target="80" Default="5080" Mode="tcp" Description="Host HTTP port for a TLS-terminating reverse proxy. Forward X-Forwarded-Proto: https. Restrict access appropriately." Type="Port" Display="always" Required="true" Mask="false">5080</Config>
+  <Config Name="TLS certificate storage" Target="/etc/nginx/ssl" Default="/mnt/user/appdata/mailflow/certs" Mode="rw" Description="Persistent writable certificate directory. Supply cert.pem and key.pem, or the container generates a self-signed pair at startup." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/mailflow/certs</Config>
+  <Config Name="Backend hostname" Target="BACKEND_HOST" Default="backend" Mode="" Description="Backend hostname or IPv4 address reachable from this container. Default uses the backend network alias. Recent frontend images support this override; IPv6 literals are not supported." Type="Variable" Display="always" Required="true" Mask="false">backend</Config>
+  <Config Name="Backend port" Target="BACKEND_PORT" Default="3000" Mode="" Description="Port reachable at BACKEND_HOST. Use internal port 3000 for the supplied backend on the shared network." Type="Variable" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Application URL" Target="APP_URL" Default="" Mode="" Description="Optional frontend compatibility setting: use the same browser-facing URL as backend APP_URL. Frontend consumption is not yet verified; this does not replace the required backend URL settings." Type="Variable" Display="advanced" Required="false" Mask="false">
+  </Config>
+</Container>

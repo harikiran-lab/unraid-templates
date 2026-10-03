@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CommunityApplications>
+  <Profile>Community-maintained Unraid templates for the MailFlow frontend and backend, using upstream container images. For template support, use this repository Issues page; for application support, see the upstream MailFlow project linked in each template.</Profile>
+  <WebPage>https://github.com/harikiran-lab/unraid-templates</WebPage>
+  <Forum>https://github.com/harikiran-lab/unraid-templates/issues</Forum>
+  <Icon>https://raw.githubusercontent.com/harikiran-lab/unraid-templates/main/icons/mailflow.png</Icon>
+</CommunityApplications>
