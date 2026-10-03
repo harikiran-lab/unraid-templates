@@ -1,60 +1,40 @@
 # MailFlow templates for Unraid
 
-Community-maintained Docker templates for the [MailFlow](https://github.com/maathimself/mailflow) frontend and backend. MailFlow is a webmail client for existing IMAP/SMTP accounts. These templates use upstream container images; this repository is not the upstream MailFlow project.
+Community-maintained templates for the upstream MailFlow frontend and backend. Both use standard Docker bridge networking; no separate Docker network is needed.
 
-## Before installing
+## Install
 
-- Provide PostgreSQL 16+ and Redis 7+ with persistent storage.
-- Create a dedicated PostgreSQL database and user, both named `mailflow` by default.
-- Create a user-defined Docker network from the Unraid terminal:
+1. Provide PostgreSQL 16+ and Redis 7+ with persistent storage. Create a dedicated MailFlow database and role. Use reachable server addresses and ports; for containers on Unraid, use the Unraid host address and their published host ports.
+2. Install the backend using bridge networking. Set **Backend API host port** to an unused host port (default **3220**), mapped to container port **3000**. Keep the internal PORT variable at 3000.
+3. Fill in database credentials and the Redis URL. Generate separate SESSION_SECRET and ENCRYPTION_KEY values with `openssl rand -hex 32`. Back up the encryption key; changing it can make stored credentials unreadable.
+4. Set backend APP_URL and FRONTEND_URL to the same browser-facing origin, including HTTPS and any nonstandard port, without a trailing slash.
+5. Start PostgreSQL and Redis, then the backend.
+6. Install the frontend using bridge networking. Set required **BACKEND_HOST** to your Unraid host IPv4 address or resolvable hostname. Set **BACKEND_PORT** to the backend host port chosen above (default **3220**). Do not use localhost or a Docker container name for this bridge configuration.
+7. Frontend HTTPS defaults to host port **50443**, and HTTP to **5080**. Certificate storage defaults to `/mnt/user/appdata/mailflow/certs`. Keep it writable; provide `cert.pem` and `key.pem`, or the image creates a self-signed pair.
+8. Start the frontend, open its WebUI, create your admin account, and review registration settings. Verify login, API/WebSocket traffic, and persistence after restart.
 
-  ```sh
-  docker network create mailflow-network
-  ```
+Use a frontend image containing upstream `set-backend.sh`, which supports BACKEND_HOST and BACKEND_PORT. The managed nginx configuration must be writable for these overrides. Frontend APP_URL is retained as an optional compatibility field; its consumption remains unverified and does not replace backend URL settings.
 
-If that network already exists, reuse it. Both MailFlow containers must join it. Database and Redis containers can join the same network, or use reachable external endpoints.
+For an additional TLS reverse proxy, forward to the frontend HTTP port and send `X-Forwarded-Proto: https`. Leave TRUST_PROXY_HOPS blank unless the trusted-proxy access restrictions and hop count have been verified. Keep the backend API port accessible only to trusted clients; do not forward it from the internet.
 
-## Install the backend
+## Updates and optional features
 
-1. Install `templates/mailflow-backend.xml` using Unraid's Docker template mechanism.
-2. Select `mailflow-network` and retain the `backend` network alias in Extra Parameters.
-3. Enter your database hostname, database name, user, and password. For a database on the same network, use its internal port, normally `5432`.
-4. Enter your Redis URL, including URL-encoded credentials if required.
-5. Generate two independent values with `openssl rand -hex 32`: one for SESSION_SECRET and one for ENCRYPTION_KEY. Store them securely. Do not change an existing encryption key without planning recovery of encrypted credentials.
-6. Set APP_URL and FRONTEND_URL to the same browser-facing origin, including HTTPS and any nonstandard port, without a trailing slash.
-7. Start PostgreSQL and Redis before the backend. Keep the internal API port at `3000` for the default configuration. No backend host port is published.
+Configure Google OAuth and VAPID fields only when enabling those features. Supply your own credentials. To pin a release, set matching published image tags in both Repository fields; MAILFLOW_VERSION as a runtime variable does not select the image.
 
-## Install the frontend
+These templates do not create database services or enforce startup health dependencies. Configure Unraid startup order and back up database data and encryption settings.
 
-1. Install `templates/mailflow-frontend.xml` and select `mailflow-network`.
-2. Leave BACKEND_HOST as `backend` and BACKEND_PORT as `3000` for the supplied backend. Recent frontend images support changing these to another reachable hostname/IPv4 address and port.
-3. The default host ports are `50443` for HTTPS and `5080` for HTTP. Change them if already occupied.
-4. Keep the certificate directory writable. It defaults to `/mnt/user/appdata/mailflow/certs`. Provide `cert.pem` and `key.pem`, or the container generates a self-signed pair. Generated certificates are not publicly trusted.
-5. Start the frontend after the backend is ready, then open its WebUI. Configure the backend URLs to match the actual browser address.
-6. Create your admin account and review registration settings.
+## Publication and support
 
-Frontend APP_URL is retained as an optional advanced compatibility field. Its consumption by the frontend has not been verified; it does not replace the backend URL settings.
+Local XML checks passed; this bridge configuration still requires live testing on Unraid. Upload the templates and this README to replace their existing repository files. Existing installed containers may retain old settings: edit them explicitly to select bridge, remove the backend network alias, add the host-port mapping, and set frontend backend address/port.
 
-For a TLS-terminating reverse proxy, forward to the frontend HTTP port and send `X-Forwarded-Proto: https`. Leave TRUST_PROXY_HOPS blank unless access is restricted to a trusted proxy and you have verified the required hop count. See the [upstream installation guide](https://github.com/maathimself/mailflow#installation).
+Repository: https://github.com/harikiran-lab/unraid-templates
 
-## Optional features and updates
+Template issues: https://github.com/harikiran-lab/unraid-templates/issues
 
-Google OAuth and web push fields are optional. Supply your own OAuth application details and matching VAPID key pair/contact when enabling those features.
+Application documentation and issues: https://github.com/maathimself/mailflow
 
-To pin a release, edit the Repository field in both templates to matching published image tags. Setting a MAILFLOW_VERSION environment variable in Unraid does not change which image Docker pulls.
+Submit and validate through https://ca.unraid.net/submit. Never upload local secrets or personalized exported templates.
 
-The default backend alias also works with older images using a fixed `backend:3000` upstream. Custom backend overrides require an image containing `set-backend.sh` and a writable managed nginx configuration.
+## License
 
-Unraid individual-container templates do not reproduce Compose health-based startup dependencies. Configure startup order and verify readiness. Back up PostgreSQL, Redis as appropriate, certificates, and encryption settings.
-
-## Publication and validation
-
-This repository contains two templates, not bundled PostgreSQL/Redis installations. XML has been checked locally; a live Unraid installation and Community Applications review are still required. Before submission, test image pulls, installation, login, API/WebSocket traffic, restarts, and persistence.
-
-Submit the public repository through [Community Applications](https://ca.unraid.net/submit), run Validate and Scan, and resolve review findings. Keep `ca_profile.xml` and this license at the repository root. Never commit local passwords, keys, or exported installation templates containing private values.
-
-## Support and license
-
-Report template problems through this repository's Issues tab. Report application problems to [MailFlow upstream](https://github.com/maathimself/mailflow/issues).
-
-The template files, documentation, and original generic envelope icon in this repository are provided under the MIT license. The icon is not an official MailFlow logo. MailFlow itself and its Docker images remain subject to their upstream licenses.
+Templates, documentation, and the original generic envelope icon are MIT licensed. The icon is not an official MailFlow logo. Upstream MailFlow and its images retain their own licenses.
