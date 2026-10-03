@@ -1,38 +1,115 @@
-# MailFlow templates for Unraid
+# MailFlow for Unraid
 
-Community-maintained templates for the upstream MailFlow frontend and backend. Both use standard Docker bridge networking; no separate Docker network is needed.
+MailFlow is a self-hosted webmail client for your existing IMAP and SMTP accounts. These community-maintained Unraid templates install its backend API and frontend web interface using the upstream Docker images.
 
-## Install
+Both containers use **bridge** networking. No custom Docker network is required.
 
-1. Provide PostgreSQL 16+ and Redis 7+ with persistent storage. Create a dedicated MailFlow database and role. Use reachable server addresses and ports; for containers on Unraid, use the Unraid host address and their published host ports.
-2. Install the backend using bridge networking. Set **Backend API host port** to an unused host port (default **3220**), mapped to container port **3000**. Keep the internal PORT variable at 3000.
-3. Fill in database credentials and the Redis URL. Generate separate SESSION_SECRET and ENCRYPTION_KEY values with `openssl rand -hex 32`. Back up the encryption key; changing it can make stored credentials unreadable.
-4. Set backend APP_URL and FRONTEND_URL to the same browser-facing origin, including HTTPS and any nonstandard port, without a trailing slash.
-5. Start PostgreSQL and Redis, then the backend.
-6. Install the frontend using bridge networking. Set required **BACKEND_HOST** to your Unraid host IPv4 address or resolvable hostname. Set **BACKEND_PORT** to the backend host port chosen above (default **3220**). Do not use localhost or a Docker container name for this bridge configuration.
-7. Frontend HTTPS defaults to host port **50443**, and HTTP to **5080**. Certificate storage defaults to `/mnt/user/appdata/mailflow/certs`. Keep it writable; provide `cert.pem` and `key.pem`, or the image creates a self-signed pair.
-8. Start the frontend, open its WebUI, create your admin account, and review registration settings. Verify login, API/WebSocket traffic, and persistence after restart.
+## Requirements
 
-Use a frontend image containing upstream `set-backend.sh`, which supports BACKEND_HOST and BACKEND_PORT. The managed nginx configuration must be writable for these overrides. Frontend APP_URL is retained as an optional compatibility field; its consumption remains unverified and does not replace backend URL settings.
+- PostgreSQL 16 or newer, with a dedicated MailFlow database and user.
+- Redis 7 or newer.
+- Persistent storage for your database, Redis, and TLS certificates.
+- A browser-facing HTTPS address, either through the frontend or your reverse proxy.
 
-For an additional TLS reverse proxy, forward to the frontend HTTP port and send `X-Forwarded-Proto: https`. Leave TRUST_PROXY_HOPS blank unless the trusted-proxy access restrictions and hop count have been verified. Keep the backend API port accessible only to trusted clients; do not forward it from the internet.
+Install PostgreSQL and Redis separately before setting up MailFlow. For services running in bridge-mode containers on Unraid, use your Unraid server address and each service's mapped host port.
 
-## Updates and optional features
+## 1. Install the backend
 
-Configure Google OAuth and VAPID fields only when enabling those features. Supply your own credentials. To pin a release, set matching published image tags in both Repository fields; MAILFLOW_VERSION as a runtime variable does not select the image.
+In Unraid Apps, locate **MailFlow-backend** and open its installation settings. Leave Network Type set to **Bridge**.
 
-These templates do not create database services or enforce startup health dependencies. Configure Unraid startup order and back up database data and encryption settings.
+Fill in the following settings:
 
-## Publication and support
+| Setting | What to enter |
+| --- | --- |
+| PostgreSQL host | Your database server address, or the Unraid server address if PostgreSQL has a published host port. |
+| PostgreSQL port | The port reachable at that address. PostgreSQL normally listens internally on 5432; its mapped host port may differ. |
+| Database name and user | The dedicated database and user you created for MailFlow. |
+| Database password | The password for that database user. |
+| Redis connection URL | Your reachable Redis endpoint, including URL-encoded credentials if authentication is enabled. |
+| Application URL and Frontend origin | The same URL users will open, including `https://` and any nonstandard port, without a trailing slash. |
+| Session secret | A unique random secret. |
+| Credential encryption key | A separate random encryption key. |
 
-Repository: https://github.com/harikiran-lab/unraid-templates
+Run this command twice in the Unraid terminal to generate two independent values, one for each secret:
 
-Template issues: https://github.com/harikiran-lab/unraid-templates/issues
+```sh
+openssl rand -hex 32
+```
 
-Application documentation and issues: https://github.com/maathimself/mailflow
+Store the encryption key securely with your backups. Losing or changing it can make saved email credentials unreadable.
 
-Submit and validate through https://ca.unraid.net/submit.
+### Backend ports
+
+MailFlow's backend listens on **container port 3000**. Keep the internal `PORT` setting at `3000`.
+
+**Backend API host port** is the configurable port published on your Unraid server. Choose an unused port. The supplied template currently prefills `3220`; this is a host-port choice, not MailFlow's internal port.
+
+| Your chosen host port | Docker mapping | Frontend BACKEND_PORT |
+| --- | --- | --- |
+| 3000 | Host 3000 → container 3000 | 3000 |
+| 3220 | Host 3220 → container 3000 | 3220 |
+
+Start PostgreSQL and Redis first, then start the backend.
+
+## 2. Install the frontend
+
+Install **MailFlow-frontend** and leave Network Type set to **Bridge**.
+
+| Setting | What to enter |
+| --- | --- |
+| Backend host address (`BACKEND_HOST`) | Your Unraid server's reachable IPv4 address or resolvable hostname. Do not enter `localhost` or the backend container name. |
+| Backend port (`BACKEND_PORT`) | The **host port you selected for the backend**, as shown above. |
+| HTTPS web interface | An available host port for HTTPS; the template prefills 50443. |
+| HTTP reverse-proxy port | An available host port for a TLS-terminating reverse proxy; the template prefills 5080. |
+| TLS certificate storage | A writable persistent directory; the template uses `/mnt/user/appdata/mailflow/certs`. |
+
+If you fill in the optional frontend Application URL field, use the same browser-facing address as the backend. Always configure the backend Application URL and Frontend origin fields.
+
+Use a recent frontend image that supports `BACKEND_HOST` and `BACKEND_PORT`.
+
+Start the frontend and open its **WebUI**. Ensure the browser address matches the URL configured in the backend. Create your administrator account, review registration settings, and add your email accounts.
+
+## HTTPS and reverse proxies
+
+For direct HTTPS, place your certificate and private key in the certificate directory as `cert.pem` and `key.pem`. If they are absent, the container generates a self-signed pair, which browsers will not trust automatically.
+
+For your own TLS-terminating reverse proxy, route traffic to the frontend's mapped HTTP port and forward `X-Forwarded-Proto: https`. Leave `TRUST_PROXY_HOPS` blank unless you have restricted access to your trusted proxy and confirmed the correct hop count. See the [upstream setup documentation](https://github.com/maathimself/mailflow).
+
+Keep the backend API port accessible only to trusted clients; do not forward it from the internet.
+
+## Optional features
+
+Google OAuth and web push notifications are optional. Configure the Google OAuth fields with your own application credentials. For web push, provide a matching VAPID public/private key pair and your contact value.
+
+## Updates and backups
+
+Update the frontend and backend together through Unraid. To use a specific release, select corresponding published image tags in each container's Repository field.
+
+Configure startup order so PostgreSQL and Redis start before the backend, followed by the frontend. Back up the database, encryption key, and certificates, along with any required Redis data.
+
+### Moving from an older custom-network installation
+
+Existing containers may retain their previous settings. To switch to this bridge configuration:
+
+1. Change both containers to **Bridge**.
+2. Remove `--network-alias backend` from the backend's Extra Parameters.
+3. Add the backend TCP mapping from your chosen host port to container port `3000`.
+4. Set frontend `BACKEND_HOST` to your Unraid server address and `BACKEND_PORT` to that chosen host port.
+5. Update database and Redis endpoints to addresses and ports reachable from bridge networking.
+6. Apply the changes and confirm login and email access work.
+
+Keep your existing secrets and database settings when migrating.
+
+## Troubleshooting
+
+If the frontend loads but cannot reach the backend, check that `BACKEND_HOST` is reachable, `BACKEND_PORT` matches the published host port, and the backend is running. Check backend logs for database or Redis connection errors. Older frontend images may need updating to support the backend address settings.
+
+## Support
+
+- [Template support](https://github.com/harikiran-lab/unraid-templates/issues)
+- [MailFlow documentation](https://github.com/maathimself/mailflow)
+- [MailFlow application issues](https://github.com/maathimself/mailflow/issues)
 
 ## License
 
-Templates, documentation, and the original generic envelope icon are MIT licensed. The icon is not an official MailFlow logo. Upstream MailFlow and its images retain their own licenses.
+These templates, documentation, and the original generic envelope icon are MIT licensed. The icon is not an official MailFlow logo. MailFlow and its Docker images retain their upstream licenses.
